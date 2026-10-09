@@ -36,6 +36,10 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.topbar{height:6
         <button class="block-btn" data-type="button"><span class="block-icon">↗</span><span>Bouton</span></button>
         <button class="block-btn" data-type="image"><span class="block-icon">▧</span><span>Image</span></button>
         <button class="block-btn" data-type="section"><span class="block-icon">▤</span><span>Section</span></button>
+        <button class="block-btn" data-type="list"><span class="block-icon">☷</span><span>Liste</span></button>
+        <button class="block-btn" data-type="card"><span class="block-icon">▣</span><span>Carte</span></button>
+        <button class="block-btn" data-type="link"><span class="block-icon">↗</span><span>Lien</span></button>
+        <button class="block-btn" data-type="separator"><span class="block-icon">━</span><span>Séparateur</span></button>
         <button class="block-btn" data-type="spacer"><span class="block-icon">↕</span><span>Espace</span></button>
       </div>
       <div class="side-section">MODÈLES</div>
@@ -85,6 +89,10 @@ const defaults = {
  button:{tag:'button',text:'Découvrir',color:'#ffffff',bg:'#6857e8',size:15,align:'center',padding:14,url:'#'},
  image:{tag:'img',text:'',src:'https://placehold.co/900x360/ece9ff/5b4be0?text=Mon+image',alt:'Image de présentation',color:'#202338',bg:'#ffffff',size:16,align:'center',padding:12},
  section:{tag:'section',text:'Nouvelle section',color:'#202338',bg:'#f2f0ff',size:22,align:'center',padding:30},
+ list:{tag:'ul',text:'Premier élément\nDeuxième élément\nTroisième élément',color:'#555b70',bg:'#ffffff',size:16,align:'left',padding:16},
+ card:{tag:'article',text:'Ma carte\nUne petite description de mon projet.',color:'#202338',bg:'#f8f7ff',size:18,align:'left',padding:22},
+ link:{tag:'a',text:'Clique ici',url:'https://example.com',color:'#6857e8',bg:'#ffffff',size:16,align:'left',padding:12},
+ separator:{tag:'hr',text:'',color:'#d8dbea',bg:'#ffffff',size:2,align:'left',padding:12},
  spacer:{tag:'div',text:'',color:'#202338',bg:'#ffffff',size:16,align:'left',padding:28}
 };
 const uid = () => 'b' + Math.random().toString(36).slice(2,10);
@@ -99,6 +107,10 @@ function blockContent(b){if(b.type==='heading')return `<h1 style="margin:0;font-
  if(b.type==='button')return `<div style="text-align:${b.align}"><a href="${esc(b.url||'#')}" style="display:inline-block;background:${esc(b.bg)};color:${esc(b.color)};padding:11px 20px;border-radius:9px;font-size:${Number(b.size)||15}px;font-weight:700;text-decoration:none">${esc(b.text)}</a></div>`;
  if(b.type==='image')return `<img src="${esc(b.src)}" alt="${esc(b.alt||'')}" style="width:100%;max-width:100%;height:auto;object-fit:cover">`;
  if(b.type==='section')return `<div style="font-size:${Number(b.size)||22}px;color:${esc(b.color)};text-align:${b.align};font-weight:750">${esc(b.text)}</div>`;
+ if(b.type==='list'){const items=String(b.text||'').split('\n').filter(x=>x.trim());return `<ul style="margin:0;padding-left:24px;font-size:${Number(b.size)||16}px;color:${esc(b.color)};text-align:${b.align};line-height:1.8">${items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`}
+ if(b.type==='card'){const parts=String(b.text||'').split('\n');const title=parts.shift()||'Ma carte';const desc=parts.join('\n');return `<article style="background:${esc(b.bg||'#f8f7ff')};border:1px solid #e6e3f5;border-radius:14px;padding:20px;box-shadow:0 5px 18px #25284a12;color:${esc(b.color)};text-align:${b.align}"><h2 style="font-size:${Number(b.size)||18}px;margin:0 0 10px">${esc(title)}</h2><p style="font-size:16px;line-height:1.6;margin:0;white-space:pre-line">${esc(desc)}</p></article>`}
+ if(b.type==='link')return `<div style="text-align:${b.align}"><a href="${esc(b.url||'#')}" style="color:${esc(b.color)};font-size:${Number(b.size)||16}px;text-decoration:underline">${esc(b.text||'Clique ici')}</a></div>`;
+ if(b.type==='separator')return `<hr style="border:0;border-top:${Math.max(1,Number(b.size)||2)}px solid ${esc(b.color||'#d8dbea')};margin:8px 0">`;
  return `<div aria-hidden="true" style="height:${Math.max(8,Number(b.padding)||28)}px"></div>`;
 }
 function renderCanvas(){
@@ -144,11 +156,12 @@ function renderCanvas(){
  canvas.onclick=()=>{selectedId=null;renderAll()};
 }
 function field(label,key,value,type='text',extra={}){const id='f_'+key;let input;if(type==='textarea')input=`<textarea id="${id}" data-key="${key}">${esc(value)}</textarea>`;else input=`<input id="${id}" data-key="${key}" type="${type}" value="${esc(value)}" ${extra.min!==undefined?`min="${extra.min}"`:''} ${extra.max!==undefined?`max="${extra.max}"`:''}>`;return `<div class="field"><label for="${id}">${label}</label>${input}</div>`}
-function renderInspector(){const b=selected();$('#selectedLabel').textContent=b?({heading:'Titre',text:'Texte',button:'Bouton',image:'Image',section:'Section',spacer:'Espace'}[b.type]):'Aucun bloc';if(!b){inspector.innerHTML='<div class="empty-state">Sélectionne un bloc dans l’aperçu pour modifier ses propriétés.</div>';return}
- let html='';if(['heading','text','button','section'].includes(b.type))html+=field('Contenu','text',b.text,'textarea');
+function renderInspector(){const b=selected();$('#selectedLabel').textContent=b?({heading:'Titre',text:'Texte',button:'Bouton',image:'Image',section:'Section',list:'Liste',card:'Carte',link:'Lien',separator:'Séparateur',spacer:'Espace'}[b.type]):'Aucun bloc';if(!b){inspector.innerHTML='<div class="empty-state">Sélectionne un bloc dans l’aperçu pour modifier ses propriétés.</div>';return}
+ let html='';if(['heading','text','button','section','list','card','link'].includes(b.type))html+=field(b.type==='list'?'Éléments (un par ligne)':b.type==='card'?'Titre puis description (sur deux lignes)':'Contenu','text',b.text,'textarea');
  if(b.type==='image'){html+=field('URL de l’image','src',b.src);html+=field('Texte alternatif','alt',b.alt||'')}
- if(b.type==='button')html+=field('Lien du bouton','url',b.url||'#','text');
- if(b.type!=='spacer')html+=`<div class="field-row">${field('Couleur du texte','color',b.color,'color')}${field('Couleur de fond','bg',b.bg||'#ffffff','color')}</div>`;
+ if(['button','link'].includes(b.type))html+=field(b.type==='button'?'Lien du bouton':'Adresse du lien','url',b.url||'#','text');
+ if(!['spacer','separator'].includes(b.type))html+=`<div class="field-row">${field('Couleur du texte','color',b.color,'color')}${field('Couleur de fond','bg',b.bg||'#ffffff','color')}</div>`;
+ if(b.type==='separator')html+=field('Épaisseur (px)','size',b.size,'number',{min:1,max:12});
  html+=`<div class="field-row">${field('Taille (px)','size',b.size,'number',{min:8,max:100})}${field('Marge intérieure (px)','padding',b.padding,'number',{min:0,max:120})}</div>`;
  if(['heading','text','button','section'].includes(b.type))html+=`<div class="field"><label>Alignement</label><select data-key="align"><option value="left" ${b.align==='left'?'selected':''}>Gauche</option><option value="center" ${b.align==='center'?'selected':''}>Centre</option><option value="right" ${b.align==='right'?'selected':''}>Droite</option></select></div>`;
  html+=`<div class="inspector-actions"><button class="btn" id="moveUp">↑ Monter</button><button class="btn" id="moveDown">↓ Descendre</button><button class="btn" id="duplicate">⧉ Dupliquer</button><button class="btn" id="deleteBlock" style="color:#dc2626">✕ Supprimer</button></div>`;
